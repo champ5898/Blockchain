@@ -1,0 +1,60 @@
+pragma solidity ^0.5.0;
+
+contract Voting{
+    
+      address public owner;
+      address[] public candidate;
+      address public winner;
+      uint public winnerVotes;
+      mapping (address=>uint) public votesReceived;
+    
+    enum votingStatus{notStarted, running, completed}
+    votingStatus public status;
+    
+    constructor() public{
+        
+              owner=msg.sender;
+    }
+    
+    modifier ownerOnly{
+        if (msg.sender==owner)
+        _;
+    }
+    
+    function setStatus() ownerOnly public{
+        if(status== votingStatus.notStarted)
+        status=votingStatus.running;
+        else
+        status=votingStatus.completed;
+    }
+    
+    function registerCandidate(address _candidate) public ownerOnly{
+          assert(status==votingStatus.notStarted);
+        candidate.push(_candidate);
+    }
+    
+    function vote (address _candidate) public{
+        require (validateCandidate(_candidate), "Not a valid candidate");
+        require(status==votingStatus.running, "Election is not active");
+        votesReceived[_candidate]+=1;
+    }
+    
+    function validateCandidate(address _candidate) public view returns(bool){
+        for(uint i=0; i<candidate.length; i++){
+        if(candidate[i]==_candidate)
+        return true;
+        
+        
+    }
+    return false;
+    }
+    function result() public{
+          require(status==votingStatus.completed, "Election is still running");
+         for(uint i=0; i<candidate.length; i++){
+            if(votesReceived[candidate[i]]>winnerVotes){
+            winner=candidate[i];
+            winnerVotes=votesReceived[candidate[i]];
+        }
+         }
+    }
+}
