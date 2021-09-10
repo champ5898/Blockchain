@@ -1,0 +1,59 @@
+pragma solidity ^0.5.0;
+
+contract Marketplace{
+   
+   address payable private owner;
+   enum status{Available, Sold}
+   status currentStatus;
+   event newProduct(uint productId, string name, uint price, address seller);
+   
+   constructor() public {
+       owner=msg.sender;
+   }
+   
+   struct product{
+       string name;
+       uint price;        // price per item
+       uint quantity;
+       address payable seller;
+     
+   }
+   
+   
+   product[] public Products;
+   address[] private Buyers;
+   
+   modifier onlyBuyer(uint _id){
+       require (msg.sender != Products[_id].seller, "You are the seller");
+       _;
+   }
+   
+   modifier cost(uint _amount){
+       require (msg.value==_amount,  "Please pay the exact amount");
+       _;
+   }
+   
+   
+   
+    function listItem(string calldata _name, uint _price, uint _quantity) external {
+         uint id = Products.push(product(_name, _price, _quantity, msg.sender))-1;
+         if (_quantity>0){
+             currentStatus = status.Available;
+         }
+         
+         emit newProduct(id, _name, _price, msg.sender);
+   }  
+   
+   function buy(uint _id) external payable onlyBuyer(_id) cost(Products[_id].price){
+       require (currentStatus== status.Available);
+       Buyers.push(msg.sender);
+       Products[_id].quantity--;
+   }
+   
+   function itemDelivered(uint _id) external onlyBuyer(_id) {
+       require(msg.sender==Buyers[_id],"You are not the buyer");
+       Products[_id].seller.transfer(Products[_id].price);
+   }
+    
+    
+}
